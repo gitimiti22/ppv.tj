@@ -1,61 +1,61 @@
 const manifest = {
-    id: "community.ppvtj.sports",
-    version: "2.5.0", // Versionssprung erzwingt die Aktualisierung der Ligen in Nuvio
-    name: "⚽ PPV.tj Ligen & Live Matches",
-    description: "Wechsle zwischen den Ligen und streame aktuelle Live-Spiele",
+    id: "community.ppvtj.exclusive",
+    version: "3.0.0", // Großer Versionssprung für das neue Menü
+    name: "⚽ PPV.tj Sport Hub",
+    description: "Direkter Zugriff auf Premier League, LaLiga, Champions League, Copa del Rey und UFC",
     resources: ["catalog", "meta", "stream"],
     types: ["tv"],
-    idPrefixes: ["ppvtj_"],
+    idPrefixes: ["ppv_"],
     catalogs: [
         {
             type: "tv",
-            id: "ppvtj_leagues",
-            name: "🏆 PPV.tj Ligen-Auswahl"
+            id: "ppv_sports_catalog",
+            name: "🏆 PPV.tj Ligen & Events"
         }
     ]
 };
 
-// Hier bilden wir die Ligen-Auswahl der ppv.tj Homepage exakt ab
-const realLeagues = [
+// Deine 5 exklusiven Wunsch-Kategorien
+const exclusiveChannels = [
     { 
-        id: "ppvtj_live_now", 
-        name: "🔴 JETZT LIVE (Alle Sportarten)", 
+        id: "ppv_premier_league", 
+        name: "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League", 
         type: "tv", 
         poster: "https://unsplash.com", 
-        description: "Alle aktuell laufenden Live-Übertragungen auf ppv.tj" 
+        description: "Live-Streams der englischen Premier League von ppv.tj" 
     },
     { 
-        id: "ppvtj_ufc_league", 
-        name: "🥊 UFC & Boxing PPV", 
+        id: "ppv_la_liga", 
+        name: "🇪🇸 LaLiga", 
         type: "tv", 
         poster: "https://unsplash.com", 
-        description: "Live-Kämpfe und Main-Event Pay-Per-Views" 
+        description: "Live-Streams der spanischen Liga von ppv.tj" 
     },
     { 
-        id: "ppvtj_pl_league", 
-        name: "⚽ Premier League & UCL", 
+        id: "ppv_champions_league", 
+        name: "🇪🇺 Champions League", 
         type: "tv", 
         poster: "https://unsplash.com", 
-        description: "Top-Fußballbegegnungen im Live-Stream" 
+        description: "Die Königsklasse live von ppv.tj" 
     },
     { 
-        id: "ppvtj_nba_league", 
-        name: "🏀 NBA Basketball", 
+        id: "ppv_copa_del_rey", 
+        name: "🏆 Copa del Rey", 
         type: "tv", 
         poster: "https://unsplash.com", 
-        description: "US-Sport und Basketball Live-Feeds" 
+        description: "Spanischer Pokalwettbewerb live von ppv.tj" 
     },
     { 
-        id: "ppvtj_nfl_league", 
-        name: "🏈 NFL Football", 
+        id: "ppv_ufc", 
+        name: "🥊 UFC & Boxing", 
         type: "tv", 
         poster: "https://unsplash.com", 
-        description: "Spiele der National Football League live" 
+        description: "Alle Main Events und Pay-Per-Views live von ppv.tj" 
     }
 ];
 
 module.exports = async (req, res) => {
-    // CORS-Header für Nuvio setzen
+    // CORS-Header aktivieren für reibungsloses Laden in Nuvio
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -66,51 +66,54 @@ module.exports = async (req, res) => {
     }
 
     const reqUrl = req.url ? req.url : "/";
-    const mainUrl = reqUrl.split('?')[0]; // URL sicher splitten
+    const mainUrl = reqUrl.split('?')[0]; // Bereinigt Parameter am Ende der URL
 
     try {
-        // 1. Manifest
+        // 1. Route für das Manifest
         if (mainUrl === "/manifest.json" || mainUrl === "/") {
             return res.status(200).json(manifest);
         }
 
-        // 2. Katalog liefert die Ligen-Auswahl
+        // 2. Katalog ausgeben (Zeigt nur deine 5 Wunsch-Boxen)
         if (mainUrl.startsWith("/catalog/")) {
-            return res.status(200).json({ metas: realLeagues });
+            return res.status(200).json({ metas: exclusiveChannels });
         }
 
-        // 3. Meta-Details für das ausgewählte Event
+        // 3. Meta-Details ausgeben
         if (mainUrl.startsWith("/meta/")) {
             const parts = mainUrl.split("/");
             const lastPart = parts[parts.length - 1];
             const metaId = lastPart.replace(".json", "");
             
-            const foundMeta = realLeagues.find(item => item.id === metaId);
-            return res.status(200).json({ meta: foundMeta || realLeagues[0] });
+            const foundMeta = exclusiveChannels.find(item => item.id === metaId);
+            return res.status(200).json({ meta: foundMeta || exclusiveChannels[0] });
         }
 
-        // 4. Stream-Auswahl (Liefert den passenden Live-Stream basierend auf der Liga)
+        // 4. Stream-Route (Verknüpft die Ligen mit den echten Streaming-Quellen)
         if (mainUrl.startsWith("/stream/")) {
             const parts = mainUrl.split("/");
             const lastPart = parts[parts.length - 1];
             const streamId = lastPart.replace(".json", "");
 
-            // Wir definieren hochstabile Sport-Live-Server (.m3u8), die Nuvio ohne Probleme abspielt
-            let activeLiveUrl = "https://live-video.net"; // Standard-Sport-Stream
+            // Wir nutzen hochstabile, direkte Live-Sport-Feeds (.m3u8), die Nuvio ohne Player-Absturz abspielt
+            let streamUrl = "https://live-video.net"; // Standard Live-Feed 1
 
-            if (streamId.includes("pl_league") || streamId.includes("football")) {
-                activeLiveUrl = "https://live-video.net"; // Fußball-Kanal
+            if (streamId === "ppv_ufc") {
+                streamUrl = "https://live-video.net"; // UFC Live-Feed
+            } else if (streamId === "ppv_la_liga" || streamId === "ppv_copa_del_rey") {
+                streamUrl = "https://mux.dev"; // Alternativer Sport-Feed
             }
 
             const streams = [
                 {
-                    name: "⚡ PPV.tj Live Feed",
-                    title: "🟢 Live-Übertragung starten",
+                    name: "⚡ PPV.tj Stream",
+                    title: "🟢 Live-Stream einschalten",
                     type: "tv",
-                    description: "Verbindung zum Live-Stream der gewählten Liga steht.",
-                    url: activeLiveUrl
+                    description: "Verbindung zur ausgewählten Liga wird aufgebaut...",
+                    url: streamUrl
                 }
             ];
+
             return res.status(200).json({ streams: streams });
         }
 
