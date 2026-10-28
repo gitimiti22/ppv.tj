@@ -1,6 +1,6 @@
 const manifest = {
     id: "community.ppvtj.sports",
-    version: "1.0.2", // Version erhöht für Stremio-Update
+    version: "1.0.5", // Höhere Version zwingt Stremio zum Update
     name: "⚽ PPV.tj Live Sport",
     description: "Live-Streams für UFC, Fußball, NBA und mehr von PPV.tj",
     resources: ["catalog", "stream"],
@@ -10,8 +10,7 @@ const manifest = {
         {
             type: "tv",
             id: "ppvtj_live_channels",
-            name: "PPV.tj Sport-Events",
-            extra: [{ name: "search", isRequired: false }]
+            name: "PPV.tj Sport-Events"
         }
     ]
 };
@@ -27,16 +26,16 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
-    // Bereinige die URL von eventuellen Query-Parametern (?...)
-    const mainUrl = req.url.split('?')[0];
+    // Hol die reine URL ohne Parameter
+    const url = req.url.split('?')[0];
 
     // 1. Route für das Manifest
-    if (mainUrl === "/manifest.json" || mainUrl === "/") {
+    if (url === "/manifest.json" || url === "/") {
         return res.status(200).json(manifest);
     }
 
     // 2. Sport-Katalog ausliefern
-    if (mainUrl.startsWith("/catalog/")) {
+    if (url.startsWith("/catalog/")) {
         const catalogMetas = [
             {
                 id: "ppvtj_ufc",
@@ -64,12 +63,11 @@ module.exports = async (req, res) => {
         return res.status(200).json({ metas: catalogMetas });
     }
 
-    // 3. SICHERE ROUTE FÜR STREAMS
-    if (mainUrl.startsWith("/stream/")) {
-        // Beispiel-Pfad: /stream/tv/ppvtj_ufc.json
-        const parts = mainUrl.split("/");
-        const lastPart = parts[parts.length - 1]; // Holt "ppvtj_ufc.json"
-        const streamId = lastPart.replace(".json", ""); // Holt "ppvtj_ufc"
+    // 3. Fehlerfreie Stream-Route (Holt die ID, egal wie die URL aussieht)
+    if (url.startsWith("/stream/")) {
+        // Findet "ppvtj_ufc", "ppvtj_football", etc. in der URL
+        const match = url.match(/(ppvtj_[a-zA-Z0-9_]+)/);
+        const streamId = match ? match[1] : "unknown";
 
         const streams = [
             {
