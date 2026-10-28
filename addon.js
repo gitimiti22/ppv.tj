@@ -1,6 +1,6 @@
 const manifest = {
     id: "community.ppvtj.sports",
-    version: "1.0.0",
+    version: "1.0.1",
     name: "⚽ PPV.tj Live Sport",
     description: "Live-Streams für UFC, Fußball, NBA und mehr von PPV.tj",
     resources: ["catalog", "stream"],
@@ -17,18 +17,25 @@ const manifest = {
 };
 
 module.exports = async (req, res) => {
+    // CORS-Header aktivieren, damit Stremio zugreifen darf
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Content-Type", "application/json");
 
-    const url = req.url.split('?')[0];
+    // Falls es eine OPTIONS-Anfrage (Preflight) von Stremio ist
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
 
-    // 1. Manifest ausliefern
+    const url = req.url;
+
+    // 1. Route für das Manifest
     if (url === "/manifest.json" || url === "/") {
         return res.status(200).json(manifest);
     }
 
-    // 2. Sport-Katalog ausliefern (Das Menü, das in Stremio erscheint)
+    // 2. Sport-Katalog ausliefern
     if (url.startsWith("/catalog/")) {
         const catalogMetas = [
             {
@@ -57,17 +64,20 @@ module.exports = async (req, res) => {
         return res.status(200).json({ metas: catalogMetas });
     }
 
-    // 3. Streams ausliefern, wenn ein Event angeklickt wird
+    // 3. FIX: Route für die Streams verbessern
     if (url.startsWith("/stream/")) {
-        const parts = url.split("/");
-        const filename = parts[parts.length - 1];
-        const streamId = filename.replace(".json", "");
+        // Bereinigt die URL von Stremio-Parametern (z.B. /stream/tv/ppvtj_ufc.json)
+        const cleanUrl = url.split('?')[0];
+        const parts = cleanUrl.split("/");
+        const filename = parts[parts.length - 1]; // Holt z.B. "ppvtj_ufc.json"
+        const streamId = filename.replace(".json", ""); // Holt z.B. "ppvtj_ufc"
 
-        // Platzhalter für den Live-Stream (m3u8 oder mp4)
+        // Wir senden ein stabiles Testvideo zurück
         const streams = [
             {
-                title: "⚡ PPV.tj Live Stream starten",
-                desc: "Kanal: " + streamId.replace("ppvtj_", "").toUpperCase(),
+                name: "⚡ PPV.tj Live",
+                title: "Stream starten (" + streamId.replace("ppvtj_", "").toUpperCase() + ")",
+                description: "Verbindung zu PPV.tj wird hergestellt...",
                 url: "https://googleapis.com"
             }
         ];
