@@ -1,8 +1,8 @@
 const manifest = {
     id: "community.ppvtj.sports",
-    version: "1.5.0", // Neue Version zwingt Stremio, den Cache zu löschen
+    version: "1.6.0", // Erhöhte Version zwingt Nuvio zum Update
     name: "⚽ PPV.tj Live Sport",
-    description: "Echte funktionierende Live-Sport-Feeds für Stremio",
+    description: "Live-Sport-Feeds optimiert für Nuvio und Stremio",
     resources: ["catalog", "meta", "stream"],
     types: ["tv"],
     idPrefixes: ["ppvtj_"],
@@ -40,6 +40,7 @@ const realLiveChannels = [
 ];
 
 module.exports = async (req, res) => {
+    // CORS-Header – extrem wichtig für Nuvio
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -49,7 +50,7 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
-    const currentUrl = req.url ? req.url.split('?')[0] : "/";
+    const currentUrl = req.url ? req.url.split('?') : "/";
 
     if (currentUrl === "/manifest.json" || currentUrl === "/") {
         return res.status(200).json(manifest);
@@ -61,29 +62,33 @@ module.exports = async (req, res) => {
 
     if (currentUrl.startsWith("/meta/")) {
         const match = currentUrl.match(/(ppvtj_[a-zA-Z0-9_]+)/);
-        const metaId = match ? match[0] : null;
+        const metaId = match ? match : null;
         const foundMeta = realLiveChannels.find(item => item.id === metaId);
-        return res.status(200).json({ meta: foundMeta || realLiveChannels[0] });
+        return res.status(200).json({ meta: foundMeta || realLiveChannels });
     }
 
     if (currentUrl.startsWith("/stream/")) {
         const match = currentUrl.match(/(ppvtj_[a-zA-Z0-9_]+)/);
-        const streamId = match ? match[0] : "unknown";
+        const streamId = match ? match : "unknown";
 
-        let videoUrl = "https://mux.dev"; // Stabiler HLS-Teststream
+        // Zuverlässige .m3u8-Teststreams für Sport
+        let videoUrl = "https://mux.dev"; 
 
-        // Hier weisen wir den Kanälen echte, funktionierende Live-IPTV-Streams (.m3u8) zu
         if (streamId === "ppvtj_ufc_main") {
             videoUrl = "https://live-video.net"; 
         } else if (streamId === "ppvtj_football_pl") {
             videoUrl = "https://live-video.net";
         }
 
+        // Nuvio-spezifisches Stream-Format
         const streams = [
             {
                 name: "⚡ PPV.tj Live",
-                title: "🟢 Stream aktivieren",
-                description: "Spielt den Live-Sport-Kanal direkt in Stremio ab",
+                title: "🟢 Live-Kanal starten",
+                type: "tv", // Zwingend erforderlich für Nuvio TV-Addons
+                behaviorHints: {
+                    notWebReady: true // Sagt Nuvio, dass es im nativen Player (mpv/Exo) geladen werden muss
+                },
                 url: videoUrl
             }
         ];
